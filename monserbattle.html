@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monster Battle RPG</title>
+<style>
+:root{--gold1:#f7c948;--gold2:#c4861a;--ink:#fff3dc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;justify-content:center;padding:12px;background:#0d0608;color:var(--ink);font-family:"Courier New",Consolas,monospace;font-weight:bold;color-scheme:dark}
+.wrap{width:100%;max-width:560px}
+h1{margin:2px 0 8px;text-align:center;font-size:1.35rem;letter-spacing:2px;color:var(--gold1);text-shadow:0 2px 0 #7a1c0a,0 0 14px #ff6a2a}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.95rem}
+.hud b{color:var(--gold1)}
+#mute{width:auto;margin:0;padding:4px 10px;font-size:1rem}
+.arena{position:relative;height:350px;overflow:hidden;border-radius:12px;border:4px solid var(--gold2);box-shadow:0 0 0 3px #3a1c05,0 0 24px #ff6a2a66;background:radial-gradient(ellipse at 50% 100%,#ff6a2a66,transparent 60%),linear-gradient(#150a12 0%,#3b1519 58%,#2a1a14 58%,#120a08 100%)}
+.arena:after{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;background:repeating-linear-gradient(90deg,#0004 0 2px,transparent 2px 46px),repeating-linear-gradient(0deg,#0004 0 2px,transparent 2px 30px);pointer-events:none}
+.torch{position:absolute;top:70px;width:9px;height:36px;border-radius:3px;background:#5a3a1e}
+.torch:before{content:"🔥";position:absolute;top:-28px;left:-9px;font-size:26px;animation:flick .25s infinite alternate}
+.torch.l{left:10px}.torch.r{right:10px}
+.plate{position:absolute;top:8px;width:44%;background:#000a;border:2px solid var(--gold2);border-radius:8px;padding:4px 7px;font-size:.78rem;z-index:3}
+.plate.p1{left:6px}.plate.p2{right:6px;text-align:right}
+.bar{height:11px;margin-top:3px;border-radius:6px;background:#000a;border:1px solid #fff4;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;transition:width .5s}
+#h1b{background:linear-gradient(#6df08f,#27b25a)}#f1b{background:linear-gradient(#ff7a7a,#d11f3a)}
+.fighter{position:absolute;bottom:30px;z-index:2}
+.fighter svg{width:100%;display:block;overflow:visible;animation:idle 2.2s ease-in-out infinite}
+#hero{left:7%;width:98px}#foe{right:6%}
+.pop{position:absolute;left:50%;top:-6px;font-size:26px;pointer-events:none;animation:rise 1s forwards;text-shadow:0 2px 3px #000;white-space:nowrap}
+.pop.d{color:#ff6b6b}.pop.h{color:#6bff95}.pop.c{color:#ffd93b;font-size:34px}.pop.m{color:#ddd;font-size:20px}
+.eye{transform-box:fill-box;transform-origin:center;animation:blink 4s infinite}
+.wing{transform-box:fill-box;transform-origin:15% 90%;animation:flap 1.1s ease-in-out infinite}
+.flame{opacity:0;transform-box:fill-box;transform-origin:right center}
+.breath .flame{animation:flame .7s}
+.lungeR{animation:lungeR .4s}.lungeL{animation:lungeL .4s}.hurt{animation:hurt .45s}.dead{animation:die .9s forwards}
+.arena.shake{animation:shake .35s}
+.ember{position:absolute;bottom:-10px;width:5px;height:5px;border-radius:50%;background:#ffb347;box-shadow:0 0 8px #ff6a2a;animation:up linear infinite;opacity:.8}
+.banner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;text-align:center;color:var(--gold1);text-shadow:0 3px 0 #7a1c0a;z-index:4;pointer-events:none;opacity:0}
+.banner.show{animation:banner 1.6s}
+.end{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#0d0608ee;text-align:center;padding:16px}
+.end[hidden]{display:none}
+.end h2{margin:0;font-size:1.9rem;color:var(--gold1)}
+.log{margin:10px 0;padding:9px 11px;min-height:96px;border:2px solid var(--gold2);border-radius:10px;background:#1a0d10;font-size:.88rem;line-height:1.4}
+.log p{margin:2px 0;opacity:.6}.log p:first-child{opacity:1}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.acts button{font-size:.8rem;padding:10px 4px}
+button{font:inherit;padding:11px 6px;border-radius:10px;border:3px solid #7a4a10;background:linear-gradient(var(--gold1),var(--gold2));color:#3a1c05;cursor:pointer;box-shadow:0 4px 0 #5a3408;line-height:1.2}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #5a3408}
+button small{display:block;font-size:.72rem;opacity:.8}
+button:disabled{filter:grayscale(1) brightness(.6);cursor:not-allowed}
+button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@keyframes idle{50%{transform:translateY(-5px)}}
+@keyframes blink{94%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.1)}}
+@keyframes flap{50%{transform:rotate(-16deg)}}
+@keyframes flame{0%{opacity:0;transform:scaleX(.2)}30%,70%{opacity:1;transform:scaleX(1.3)}100%{opacity:0;transform:scaleX(1.6)}}
+@keyframes lungeR{50%{transform:translateX(90px)}}
+@keyframes lungeL{50%{transform:translateX(-90px)}}
+@keyframes hurt{0%,100%{filter:none}25%{filter:brightness(2.4) sepia(1) hue-rotate(-40deg) saturate(6);transform:translateX(-8px)}60%{filter:brightness(1.6);transform:translateX(8px)}}
+@keyframes die{to{opacity:0;transform:translateY(40px) rotate(18deg) scale(.8)}}
+@keyframes shake{25%{transform:translate(-5px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,-2px)}}
+@keyframes rise{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-70px);opacity:0}}
+@keyframes flick{to{transform:scale(1.15) rotate(6deg);opacity:.85}}
+@keyframes up{to{transform:translateY(-380px) translateX(20px);opacity:0}}
+@keyframes banner{0%{opacity:0;transform:scale(.5)}20%,70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.2)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚔️ MONSTER BATTLE BY MAH RUBI, YASHA, ABIHA, AHMAREEN AND ISHAL ⚔️</h1>
+  <div class="hud"><span>Fight <b id="stage">1/3</b></span><span>🪙 <b id="gold">0</b></span><button id="mute" aria-label="Sound">🔊</button></div>
+
+  <div class="arena" id="arena">
+    <div class="torch l"></div><div class="torch r"></div>
+    <div class="plate p1">HERO<div class="bar"><i id="h1b"></i></div><span id="h1t"></span></div>
+    <div class="plate p2"><span id="fn"></span><div class="bar"><i id="f1b"></i></div><span id="f1t"></span></div>
+    <div class="fighter" id="hero"></div>
+    <div class="fighter" id="foe"></div>
+    <div class="banner" id="banner"></div>
+    <div class="end" id="end" hidden><h2 id="endT"></h2><div id="endS"></div><button id="again" style="padding:12px 26px">Play again</button></div>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <div class="acts">
+    <button id="b0">⚔️ Normal Attack<small>10-20 damage</small></button>
+    <button id="b1">💥 Special Attack<small id="s1"></small></button>
+    <button id="b2">🧪 Drink Potion<small id="s2"></small></button>
+  </div>
+</div>
+
+<script>
+const HERO='<svg viewBox="0 0 100 130"><ellipse cx="50" cy="124" rx="30" ry="5" fill="#0007"/><path d="M30 55Q18 100 26 120H74Q82 100 70 55Z" fill="#b3202f"/><rect x="35" y="95" width="13" height="26" rx="4" fill="#5b6475"/><rect x="52" y="95" width="13" height="26" rx="4" fill="#5b6475"/><rect x="30" y="52" width="40" height="48" rx="11" fill="#9aa6bd"/><rect x="42" y="60" width="16" height="30" rx="4" fill="#cfd8ea"/><circle cx="50" cy="36" r="20" fill="#aab6cf"/><rect x="34" y="32" width="32" height="9" rx="3" fill="#1d2433"/><g class="eye"><circle cx="43" cy="36.5" r="2.5" fill="#ffe27a"/><circle cx="57" cy="36.5" r="2.5" fill="#ffe27a"/></g><path d="M50 17Q64 3 76 14Q60 14 54 24Z" fill="#e0334a"/><path d="M10 62H34V88Q22 101 10 88Z" fill="#2f6fdd" stroke="#f2c14e" stroke-width="3"/><rect x="74" y="28" width="6" height="54" rx="2" fill="#e8eef9"/><rect x="68" y="80" width="18" height="5" rx="2" fill="#f2c14e"/><rect x="74" y="85" width="6" height="12" rx="2" fill="#7a4a21"/></svg>';
+const GOBLIN='<svg viewBox="0 0 100 130"><ellipse cx="50" cy="124" rx="28" ry="5" fill="#0007"/><path d="M8 52L30 38L33 62Z" fill="#6fbf4a"/><path d="M92 52L70 38L67 62Z" fill="#6fbf4a"/><ellipse cx="50" cy="96" rx="22" ry="26" fill="#5da83d"/><path d="M32 102Q50 126 68 102L66 114Q50 128 34 114Z" fill="#7a4a21"/><circle cx="50" cy="50" r="26" fill="#78c850"/><g class="eye"><ellipse cx="40" cy="48" rx="7" ry="8" fill="#fff"/><ellipse cx="60" cy="48" rx="7" ry="8" fill="#fff"/><circle cx="42" cy="50" r="3.5" fill="#c1121f"/><circle cx="58" cy="50" r="3.5" fill="#c1121f"/></g><path d="M30 38L46 45M70 38L54 45" stroke="#2c5a1a" stroke-width="4" stroke-linecap="round"/><path d="M36 64Q50 76 64 64Z" fill="#2b0f0f"/><path d="M41 65l3 6 3-6zM53 65l3 6 3-6z" fill="#fff"/><rect x="76" y="64" width="9" height="50" rx="4" fill="#8b5a2b"/><ellipse cx="80" cy="60" rx="11" ry="15" fill="#a06a35"/></svg>';
+const ORC='<svg viewBox="0 0 120 130"><ellipse cx="60" cy="124" rx="40" ry="6" fill="#0007"/><rect x="34" y="96" width="18" height="26" rx="5" fill="#4c5a3a"/><rect x="68" y="96" width="18" height="26" rx="5" fill="#4c5a3a"/><rect x="6" y="58" width="20" height="40" rx="9" fill="#6b8a4a"/><rect x="94" y="58" width="20" height="40" rx="9" fill="#6b8a4a"/><rect x="22" y="52" width="76" height="52" rx="16" fill="#6b8a4a"/><path d="M28 58H92V88Q60 102 28 88Z" fill="#6a4a2b"/><rect x="56" y="58" width="8" height="34" fill="#3d2a17"/><circle cx="38" cy="68" r="3" fill="#c9d1dc"/><circle cx="82" cy="68" r="3" fill="#c9d1dc"/><path d="M34 36L20 24L36 28Z" fill="#6b8a4a"/><path d="M86 36L100 24L84 28Z" fill="#6b8a4a"/><circle cx="60" cy="36" r="26" fill="#7ea055"/><g class="eye"><ellipse cx="50" cy="34" rx="5" ry="6" fill="#fff"/><ellipse cx="70" cy="34" rx="5" ry="6" fill="#fff"/><circle cx="51" cy="36" r="2.6" fill="#b3001b"/><circle cx="69" cy="36" r="2.6" fill="#b3001b"/></g><path d="M42 26L56 32M78 26L64 32" stroke="#2a3a1a" stroke-width="4" stroke-linecap="round"/><path d="M44 48Q60 56 76 48L76 52Q60 62 44 52Z" fill="#2a0f0f"/><path d="M46 49l-3-10 7 6zM74 49l3-10-7 6z" fill="#fff6dc"/><rect x="104" y="40" width="6" height="72" rx="2" fill="#7a4a21"/><path d="M104 44Q84 36 82 58Q96 68 104 62Z" fill="#c9d1dc" stroke="#7b8594" stroke-width="2"/></svg>';
+const DRAGON='<svg viewBox="0 0 160 130"><ellipse cx="82" cy="124" rx="52" ry="6" fill="#0007"/><path d="M120 86Q158 80 152 114Q132 114 116 102Z" fill="#c1272d"/><g class="wing"><path d="M72 62Q96 4 142 18Q124 38 130 52Q110 48 106 68Z" fill="#8f1d2c"/></g><ellipse cx="86" cy="86" rx="38" ry="30" fill="#e0403a"/><ellipse cx="78" cy="93" rx="24" ry="22" fill="#ffd9a0"/><rect x="62" y="104" width="14" height="18" rx="5" fill="#c1272d"/><rect x="94" y="104" width="14" height="18" rx="5" fill="#c1272d"/><path d="M52 72Q40 42 50 30Q70 20 78 42Q70 62 68 78Z" fill="#e0403a"/><path d="M72 58l6-13 6 13zM88 56l6-13 6 13zM104 62l6-13 6 13z" fill="#fff0c9"/><ellipse cx="48" cy="34" rx="24" ry="19" fill="#e8504a"/><ellipse cx="30" cy="41" rx="14" ry="10" fill="#f0665a"/><circle cx="25" cy="39" r="2" fill="#7a1a1a"/><path d="M48 18L56 -3L63 21ZM35 21L35 1L46 18Z" fill="#fff0c9"/><g class="eye"><ellipse cx="46" cy="30" rx="6" ry="6.5" fill="#ffe14d"/><ellipse cx="46" cy="30" rx="1.8" ry="5.5" fill="#222"/></g><path d="M38 22L56 28" stroke="#6b1220" stroke-width="3" stroke-linecap="round"/><g class="flame"><path d="M18 44Q-14 28 -10 46Q-20 54 4 54Q-8 66 18 52Z" fill="#ff9d1c"/><path d="M14 46Q-4 38 -2 47Q-6 52 6 52Q0 58 14 50Z" fill="#ffe14d"/></g></svg>';
+
+const MON=[
+ {n:"Goblin",art:GOBLIN,w:112,hp:40,hit:10,gold:20,intro:"A sneaky Goblin jumps out!"},
+ {n:"Orc",art:ORC,w:150,hp:70,hit:15,gold:40,intro:"The ground shakes... an ORC attacks!"},
+ {n:"Dragon",art:DRAGON,w:210,hp:110,hit:22,gold:100,intro:"The lava rumbles... a DRAGON awakens!"}
+];
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+let hero,mon,idx,busy,guard,muted=false,ac;
+
+function sfx(f,d,type,v,delay){
+  if(muted)return;
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const t=ac.currentTime+(delay||0),o=ac.createOscillator(),g=ac.createGain();
+    o.type=type||"square";o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(v||.08,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d);
+  }catch(e){}
+}
+function say(t){const p=document.createElement("p");p.textContent=t;const l=$("log");l.prepend(p);while(l.children.length>5)l.lastChild.remove();}
+function pop(el,txt,cls){const s=document.createElement("span");s.className="pop "+cls;s.textContent=txt;el.appendChild(s);setTimeout(()=>s.remove(),1000);}
+function anim(el,c,ms){el.classList.remove(c);void el.offsetWidth;el.classList.add(c);setTimeout(()=>el.classList.remove(c),ms||500);}
+function shake(){anim($("arena"),"shake",350);}
+function banner(t){const b=$("banner");b.textContent=t;b.classList.remove("show");void b.offsetWidth;b.classList.add("show");}
+function draw(){
+  const h=Math.max(hero.hp,0),f=Math.max(mon.cur,0);
+  $("h1b").style.width=h+"%";$("h1t").textContent=h+" / 100 HP";
+  $("f1b").style.width=f/mon.max*100+"%";$("f1t").textContent=f+" / "+mon.max+" HP";
+  $("gold").textContent=hero.gold;$("stage").textContent=(idx+1)+"/3";
+  $("s1").textContent=hero.sp+" left, 70% hit";$("s2").textContent=hero.pot+" left, +30 HP";
+  $("b0").disabled=busy;$("b1").disabled=busy||hero.sp<1;$("b2").disabled=busy||hero.pot<1;
+}
+function start(){
+  hero={hp:100,pot:3,sp:2,gold:0};idx=0;
+  $("end").hidden=true;$("log").innerHTML="";$("hero").innerHTML=HERO;
+  say("Defeat the Goblin, Orc, and Dragon to win!");
+  spawn();
+}
+function spawn(){
+  mon={...MON[idx],max:MON[idx].hp,cur:MON[idx].hp};
+  const f=$("foe");f.className="fighter";f.style.width=mon.w+"px";f.innerHTML=mon.art;
+  $("fn").textContent=mon.n.toUpperCase();
+  banner("FIGHT "+(idx+1));sfx(220,.25,"sawtooth",.1);sfx(330,.3,"sawtooth",.1,.15);
+  say("A wild "+mon.n+" appears! (HP: "+mon.hp+")");busy=false;draw();
+}
+function hitFoe(d,msg,crit){
+  anim($("hero"),"lungeR",400);mon.cur-=d;
+  setTimeout(()=>{anim($("foe"),"hurt",450);if(d>=25)shake();},180);
+  pop($("foe"),(crit?"CRIT ":"-")+d,crit?"c":"d");say(msg);
+  sfx(crit?520:200,.15,"square",.1);if(crit)sfx(780,.2,"square",.08,.1);
+}
+function act(t){
+  if(busy)return;busy=true;
+  if(t===0){
+    const d=rnd(10,20);
+    hitFoe(d,"You hit the "+mon.n+" for "+d+" damage!",false);
+  }else if(t===1){
+    hero.sp--;
+    if(Math.random()<.7){const d=rnd(30,40);hitFoe(d,"SPECIAL ATTACK! You dealt "+d+" damage!",false);}
+    else{anim($("hero"),"lungeR",400);pop($("foe"),"MISS","m");say("Your special attack MISSED!");sfx(110,.25,"triangle",.1);}
+  }else if(t===2){
+    hero.pot--;hero.hp=Math.min(100,hero.hp+30);
+    pop($("hero"),"+30","h");say("You drank a potion. Your HP is now "+hero.hp+".");
+    sfx(500,.12,"sine",.12);sfx(700,.12,"sine",.12,.1);sfx(900,.16,"sine",.12,.2);
+  }
+  draw();
+  if(mon.cur<=0)return win();
+  setTimeout(foeTurn,900);
+}
+function foeTurn(){
+  let d=rnd(1,mon.hit),txt="The "+mon.n+" hits you for ";
+  const f=$("foe");anim(f,"lungeL",400);
+  if(mon.n==="Dragon"){f.classList.add("breath");setTimeout(()=>f.classList.remove("breath"),700);}
+  hero.hp-=d;
+  setTimeout(()=>{anim($("hero"),"hurt",450);if(d>=14)shake();},180);
+  pop($("hero"),"-"+d,"d");say(txt+d+" damage!");sfx(140,.18,"sawtooth",.1);
+  draw();
+  if(hero.hp<=0)return finish(false);
+  busy=false;draw();
+}
+function win(){
+  hero.gold+=mon.gold;$("foe").classList.add("dead");
+  say(">>> You defeated the "+mon.n+"! +"+mon.gold+" gold <<<");
+  [523,659,784,1047].forEach((f,i)=>sfx(f,.18,"square",.09,i*.12));
+  idx++;draw();
+  if(idx>=3)setTimeout(()=>finish(true),1200);
+  else setTimeout(spawn,1500);
+}
+function finish(won){
+  busy=true;
+  $("endT").textContent=won?"CONGRATULATIONS!":"GAME OVER!";
+  $("endS").textContent=won?"You defeated all monsters! Total Gold: "+hero.gold+" | Remaining HP: "+hero.hp:"You were defeated by the "+mon.n+"... Total gold collected: "+hero.gold;
+  $("end").hidden=false;
+  if(won)[523,659,784,1047,1319].forEach((f,i)=>sfx(f,.2,"square",.09,i*.13));
+  else[330,262,196].forEach((f,i)=>sfx(f,.3,"sawtooth",.09,i*.25));
+}
+for(let i=0;i<3;i++)$("b"+i).onclick=()=>act(i);
+$("again").onclick=start;
+$("mute").onclick=()=>{muted=!muted;$("mute").textContent=muted?"🔇":"🔊";};
+for(let i=0;i<14;i++){const e=document.createElement("span");e.className="ember";e.style.left=rnd(2,96)+"%";e.style.animationDuration=rnd(30,70)/10+"s";e.style.animationDelay=-rnd(0,60)/10+"s";$("arena").appendChild(e);}
+start();
+</script>
+</body>
+</html>
